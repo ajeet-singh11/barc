@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BARC Scientific Officer CS Mock Test 2026</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Arial, sans-serif; }
+        body { background: #0a2a44; height: 100vh; display: flex; justify-content: center; align-items: center; overflow: hidden; }
+        
+        /* Virtual Calculator UI */
+        #calc-wrapper { display: none; position: fixed; top: 80px; right: 20px; width: 260px; background: #222; border: 2px solid #ff9933; border-radius: 10px; padding: 10px; z-index: 5000; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        #calc-screen { width: 100%; height: 45px; background: #eee; text-align: right; padding: 10px; margin-bottom: 10px; font-size: 20px; border-radius: 5px; font-family: monospace; border: none; }
+        .calc-keys { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; }
+        .key { padding: 10px; background: #444; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 13px; }
+        .key:hover { background: #666; }
+        .key.op { background: #ff9933; color: black; font-weight: bold; }
+
+        /* General Layout */
+        .login-page { width: 450px; background: white; border-radius: 20px; padding: 35px; box-shadow: 0 20px 40px rgba(0,0,0,0.4); border: 4px solid #ff9933; text-align: center; }
+        .barc-logo .atom { font-size: 70px; background: #0a2a44; color: #ffd700; width: 110px; height: 110px; line-height: 110px; border-radius: 50%; margin: 0 auto 15px; border: 4px solid #ff9933; }
+        .login-btn { width: 100%; padding: 15px; background: #0a2a44; color: white; border-radius: 10px; font-weight: bold; cursor: pointer; border: 2px solid #ff9933; font-size: 16px; margin-top: 20px;}
+        
+        .exam-container { display: none; width: 100%; height: 100vh; background: #f0f5fa; flex-direction: column; }
+        .exam-header { background: #0a2a44; color: white; padding: 10px 25px; border-bottom: 4px solid #ff9933; display: flex; justify-content: space-between; align-items: center; }
+        .timer-box { background: #051a2a; padding: 8px 20px; border-radius: 30px; border: 2px solid #ff9933; font-size: 24px; color: #ff9933; font-family: monospace; }
+        
+        .main-area { display: flex; flex: 1; overflow: hidden; padding: 15px; gap: 15px; }
+        .left-panel { flex: 3; background: white; border-radius: 15px; border: 2px solid #0a2a44; display: flex; flex-direction: column; }
+        .question-scroll { padding: 30px; overflow-y: auto; flex: 1; }
+        .q-header { display: flex; justify-content: space-between; border-bottom: 3px solid #ff9933; padding-bottom: 10px; margin-bottom: 20px; font-weight: bold; }
+        .q-text { font-size: 18px; color: #1a1a1a; margin-bottom: 25px; line-height: 1.6; }
+        
+        /* Options */
+        .option-item { display: flex; align-items: center; padding: 15px; background: #f8faff; border: 2px solid #d0e0f0; border-radius: 10px; cursor: pointer; margin-bottom: 12px; }
+        .option-item.selected { background: #c6e0ff; border-color: #0a2a44; }
+        .option-prefix { width: 35px; height: 35px; background: #0a2a44; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-right: 15px; font-weight: bold; }
+        
+        /* Palette Colors */
+        .right-panel { flex: 1; display: flex; flex-direction: column; gap: 15px; max-width: 350px; }
+        .palette-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; overflow-y: auto; max-height: 300px; padding: 10px; background: #f9f9f9; border-radius: 8px; }
+        .palette-item { aspect-ratio: 1; display: flex; align-items: center; justify-content: center; background: #ecf0f1; border: 1px solid #bdc3c7; border-radius: 5px; cursor: pointer; font-size: 13px; font-weight: bold; }
+        
+        .palette-item.answered { background: #27ae60 !important; color: white; }
+        .palette-item.review { background: #3498db !important; color: white; } /* BLUE for Review */
+        .palette-item.current { border: 3px solid #0a2a44; transform: scale(1.05); }
+
+        .result-page { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #0a2a44; justify-content: center; align-items: center; color: white; z-index: 8000; overflow-y: auto; padding: 40px 0;}
+        .result-card { background: white; color: #333; padding: 40px; border-radius: 20px; width: 90%; max-width: 800px; border: 6px solid #ff9933; text-align: center; margin: auto; }
+        
+        /* Incorrect Review Section */
+        .incorrect-review-section { margin-top: 30px; text-align: left; max-height: 400px; overflow-y: auto; padding-right: 10px; }
+        .review-item { background: #fdf2f2; border-left: 5px solid #e74c3c; padding: 15px; margin-bottom: 15px; border-radius: 5px; }
+        .correct-ans { color: #27ae60; font-weight: bold; margin-top: 5px; }
+        .user-ans { color: #e74c3c; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <div id="calc-wrapper">
+        <div style="color:white; font-size:12px; margin-bottom:5px; display:flex; justify-content:space-between;">
+            <span>GATE VIRTUAL CALC</span>
+            <span style="cursor:pointer" onclick="toggleCalc()">[X]</span>
+        </div>
+        <input type="text" id="calc-screen" value="0" readonly>
+        <div class="calc-keys">
+            <button class="key op" onclick="calcClear()">C</button>
+            <button class="key" onclick="calcFunc('sqrt')">√</button>
+            <button class="key" onclick="calcFunc('log')">log</button>
+            <button class="key op" onclick="calcOp('/')">/</button>
+            <button class="key" onclick="calcNum('7')">7</button>
+            <button class="key" onclick="calcNum('8')">8</button>
+            <button class="key" onclick="calcNum('9')">9</button>
+            <button class="key op" onclick="calcOp('*')">*</button>
+            <button class="key" onclick="calcNum('4')">4</button>
+            <button class="key" onclick="calcNum('5')">5</button>
+            <button class="key" onclick="calcNum('6')">6</button>
+            <button class="key op" onclick="calcOp('-')">-</button>
+            <button class="key" onclick="calcNum('1')">1</button>
+            <button class="key" onclick="calcNum('2')">2</button>
+            <button class="key" onclick="calcNum('3')">3</button>
+            <button class="key op" onclick="calcOp('+')">+</button>
+            <button class="key" onclick="calcNum('0')">0</button>
+            <button class="key" onclick="calcNum('.')">.</button>
+            <button class="key" onclick="calcFunc('sin')">sin</button>
+            <button class="key op" style="background:#27ae60" onclick="calcSolve()">=</button>
+        </div>
+    </div>
+
+    <div class="login-page" id="loginPage">
+        <div class="barc-logo"><div class="atom">⚛️</div><h1>BARC 2026</h1></div>
+        <div style="margin: 20px 0; text-align: left;">
+            <label>Name:</label><input type="text" id="userName" style="width:100%; padding:10px; margin-top:5px;" value="" placeholder="Enter Your Name" required>
+        </div>
+        <button class="login-btn" onclick="validateLogin()">🚀 LOGIN TO SYSTEM</button>
+    </div>
+
+    <div class="exam-container" id="examPage">
+        <div class="exam-header">
+            <div><h2>BARC SCIENTIFIC OFFICER MOCK</h2><p id="candidateName"></p></div>
+            <button class="key op" style="height:40px; padding:0 20px;" onclick="toggleCalc()">🖩 CALCULATOR</button>
+            <div class="timer-box" id="timerDisplay">02:00:00</div>
+        </div>
+
+        <div class="main-area">
+            <div class="left-panel">
+                <div class="question-scroll" id="questionPanel"></div>
+                <div class="nav-buttons" style="padding:20px; display:flex; gap:10px;">
+                    <button class="login-btn" style="margin:0; background:#7f8c8d" onclick="move(-1)">Previous</button>
+                    <button class="login-btn" style="margin:0; background:#3498db" onclick="markReview()">Mark for Review</button>
+                    <button class="login-btn" style="margin:0" onclick="move(1)">Save & Next</button>
+                </div>
+            </div>
+
+            <div class="right-panel">
+                <div class="palette-card">
+                    <h4>Question Palette</h4><br>
+                    <div class="palette-grid" id="paletteGrid"></div>
+                    <button class="login-btn" style="background:#e74c3c" onclick="submitReq()">FINISH EXAM</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="result-page" id="resultPage">
+        <div class="result-card">
+            <h2 style="color:#0a2a44">FINAL SCORECARD</h2><br>
+            <p>Correct Answers (+3): <b id="resC"></b></p>
+            <p>Incorrect Answers (-1): <b id="resW"></b></p>
+            <h1 style="background:#f0f5fa; padding:20px; margin:20px 0;">Total Score: <span id="resS"></span></h1>
+            
+            <div class="incorrect-review-section" id="incorrectReview">
+                <h3 style="color:#e74c3c; border-bottom: 2px solid #e74c3c; padding-bottom:5px; margin-bottom:15px;">Incorrect Questions Review:</h3>
+                <div id="incorrectList"></div>
+            </div>
+
+            <button class="login-btn" onclick="location.reload()">RETAKE TEST</button>
+            <button class="login-btn" onclick="window.location.href='index.html'">HOME</button>
+
+        </div>
+    </div>
+
+    <script>
+        const gatePyqs = [
+            { q: "A logical address space has 64 pages of 1024 words each, mapped onto a physical memory of 32 frames. How many bits are in the logical address?", opts: ["15", "16", "14", "12"], c: 1 },
+            { q: "Consider a disk with 200 tracks (0-199) and current head at 50. Request queue: 82, 170, 43, 140, 24, 16, 190. Total seek distance using SCAN (towards 199)?", opts: ["282", "332", "150", "250"], c: 1 },
+            { q: "In a B+ Tree of order 4 (max 4 pointers), what is the maximum number of keys in an internal node?", opts: ["4", "3", "5", "2"], c: 1 },
+            { q: "Which of the following is NOT a property of an Equivalence Relation?", opts: ["Reflexive", "Symmetric", "Transitive", "Antisymmetric"], c: 3 },
+            { q: "A 5-stage pipeline has stage delays 1.5, 2.5, 2.0, 1.2, 3.0 ns. Register delay is 0.3 ns. What is the clock frequency?", opts: ["303 MHz", "333 MHz", "285 MHz", "400 MHz"], c: 0 },
+            { q: "The number of distinct BSTs possible with 4 distinct keys is:", opts: ["14", "24", "42", "5"], c: 0 },
+            { q: "Which of the following problems is undecidable?", opts: ["Membership for CFL", "Emptiness of DFA", "Ambiguity of CFG", "Finiteness of Regular Language"], c: 2 },
+            { q: "In IPv4, if the HLEN field is 12, the header length in bytes is:", opts: ["12", "24", "48", "60"], c: 2 },
+            { q: "A k-way set associative cache has 64KB size and 32B block size. If sets = 512, then k is:", opts: ["2", "4", "8", "16"], c: 1 },
+            { q: "Which normal form removes Partial Functional Dependency?", opts: ["1NF", "2NF", "3NF", "BCNF"], c: 1 },
+            { q: "Inverse of 3 modulo 7 in Group (Z7, *) is:", opts: ["2", "4", "5", "1"], c: 2 },
+            { q: "Time complexity to build a heap of size n elements is:", opts: ["O(n)", "O(n log n)", "O(log n)", "O(n^2)"], c: 0 },
+            { q: "Total number of child processes created by: main() { fork(); fork(); fork(); }", opts: ["3", "7", "8", "4"], c: 1 },
+            { q: "Maximum number of edges in a simple bipartite graph with 10 vertices?", opts: ["45", "25", "20", "50"], c: 1 },
+            { q: "Which sorting algorithm is NOT stable in its standard version?", opts: ["Merge Sort", "Insertion Sort", "Heap Sort", "Bubble Sort"], c: 2 },
+            { q: "In IEEE 754 single precision, the exponent bias is:", opts: ["127", "128", "1023", "1024"], c: 0 },
+            { q: "Wait-for-graph is used in OS for:", opts: ["Paging", "Deadlock detection", "Segmentation", "Cache coherence"], c: 1 },
+            { q: "A graph is Eulerian if and only if all vertices have:", opts: ["Odd degree", "Even degree", "Same degree", "Degree 2"], c: 1 },
+            { q: "Which layer of OSI model is responsible for Dialog Control?", opts: ["Presentation", "Session", "Application", "Transport"], c: 1 },
+            { q: "Strict 2-Phase Locking (S-2PL) ensures:", opts: ["No deadlock", "Serializability & Recoverability", "View serializability only", "Starvation freedom"], c: 1 },
+            { q: "Hamming distance between 101101 and 001011 is:", opts: ["2", "3", "4", "5"], c: 1 },
+            { q: "Which scheduling provides minimum average waiting time?", opts: ["Round Robin", "FCFS", "SRTF", "SJF"], c: 2 },
+            { q: "A 4-bit Johnson counter has how many distinct states?", opts: ["4", "16", "8", "6"], c: 2 },
+            { q: "The language {a^n b^n c^n | n >= 1} is:", opts: ["Regular", "Context-Free", "Context-Sensitive", "Recursive"], c: 2 },
+            { q: "TCP 3-way handshake is used to synchronize:", opts: ["IP addresses", "Sequence numbers", "MAC addresses", "Ports"], c: 1 },
+            { q: "Size of an Inverted Page Table depends on:", opts: ["Virtual memory size", "Physical memory size", "Cache size", "Disk size"], c: 1 },
+            { q: "Chromatic number of a planar graph is at most:", opts: ["2", "3", "4", "5"], c: 2 },
+            { q: "Which tool is used for Lexical Analysis generation?", opts: ["Yacc", "Lex", "Gcc", "Bison"], c: 1 },
+            { q: "Number of 1s in binary of (4096 + 256 + 16 + 1)?", opts: ["4", "5", "6", "10"], c: 0 },
+            { q: "Count-to-infinity problem is a disadvantage of:", opts: ["Link State", "Distance Vector", "BGP", "RIP v2"], c: 1 },
+            { q: "In a min-heap, second smallest element is at:", opts: ["Index 0", "Level 1", "Leaf node", "Rightmost node"], c: 1 },
+            { q: "Optimal page replacement is also known as:", opts: ["Belady's", "LRU", "MIN", "FIFO"], c: 2 },
+            { q: "RSA algorithm security is based on:", opts: ["XOR complexity", "Integer Factorization", "Discrete Log", "Prime count"], c: 1 },
+            { q: "Which HTTP method is idempotent but NOT safe?", opts: ["GET", "POST", "PUT", "HEAD"], c: 2 },
+            { q: "Number of states in DFA for 'starts with a and ends with b' over {a,b}?", opts: ["3", "4", "5", "2"], c: 1 },
+            { q: "In C, 'static' variable is stored in:", opts: ["Stack", "Heap", "Data Segment", "Register"], c: 2 },
+            { q: "Full binary tree with n internal nodes has how many leaves?", opts: ["n", "n+1", "2n", "log n"], c: 1 },
+            { q: "Which parser is the most powerful?", opts: ["LL(1)", "SLR(1)", "LALR(1)", "Canonical LR(1)"], c: 3 },
+            { q: "Load factor of hash table with 50 slots and 200 keys?", opts: ["4", "0.25", "150", "250"], c: 0 },
+            { q: "The 'Pumping Lemma' proves a language is:", opts: ["Regular", "Not Regular", "Context Free", "Finite"], c: 1 },
+            { q: "Which logic gate is known as a Coincidence gate?", opts: ["XOR", "XNOR", "NAND", "NOR"], c: 1 },
+            { q: "COCOMO model 'Embedded' mode b value is:", opts: ["1.05", "1.12", "1.20", "1.50"], c: 2 },
+            { q: "Size of pointer in 64-bit C compiler is:", opts: ["4 bytes", "8 bytes", "2 bytes", "16 bytes"], c: 1 },
+            { q: "Belady's anomaly occurs in:", opts: ["LRU", "Optimal", "FIFO", "LIFO"], c: 2 },
+            { q: "Maximum number of nodes in strictly binary tree with height h (root h=0)?", opts: ["2^h", "2^(h+1)-1", "h^2", "2^h - 1"], c: 1 },
+            { q: "Which layer handles End-to-End error control?", opts: ["Network", "Transport", "Data Link", "Physical"], c: 1 },
+            { q: "Result of 5 & 3 in C?", opts: ["1", "7", "0", "8"], c: 0 },
+            { q: "Cycle graph C5 chromatic number is:", opts: ["2", "3", "5", "4"], c: 1 },
+            { q: "Which is a Black-box testing technique?", opts: ["Data flow", "Boundary value", "Loop testing", "Condition coverage"], c: 1 },
+            { q: "Minimum NAND gates for OR gate?", opts: ["2", "3", "4", "1"], c: 1 },
+            { q: "T(n) = 2T(n/2) + n complexity is:", opts: ["O(n)", "O(n log n)", "O(log n)", "O(n^2)"], c: 1 },
+            { q: "In B+ Tree, data pointers are at:", opts: ["Root", "Internal nodes", "Leaf nodes only", "Every node"], c: 2 },
+            { q: "Subnet ID of 192.168.1.100 with /26 mask?", opts: ["192.168.1.0", "192.168.1.64", "192.168.1.128", "192.168.1.32"], c: 1 },
+            { q: "Conflict-free access is guaranteed in:", opts: ["Read-After-Write", "Exclusive Bank", "Shared Bus", "None"], c: 1 },
+            { q: "Which parsing is Top-down?", opts: ["SLR", "LALR", "LL(1)", "CLR"], c: 2 },
+            { q: "Max edges in planar graph with n vertices?", opts: ["n-1", "3n-6", "n log n", "n^2"], c: 1 },
+            { q: "In Unix, 'exec' replaces:", opts: ["Parent", "Process image", "File", "Stack"], c: 1 },
+            { q: "Result of 1 << 10?", opts: ["10", "100", "1024", "2048"], c: 2 },
+            { q: "Dijkstra's fails for:", opts: ["Directed graphs", "Negative weights", "Cycles", "Disconnected graphs"], c: 1 },
+            { q: "ARP maps:", opts: ["IP to MAC", "MAC to IP", "URL to IP", "Port to IP"], c: 0 },
+            { q: "Which is a greedy algorithm?", opts: ["Prim's", "Floyd-Warshall", "Matrix Chain", "LCS"], c: 0 },
+            { q: "Total number of bits in MAC address?", opts: ["32", "48", "64", "128"], c: 1 },
+            { q: "Dirty bit is used for:", opts: ["Deadlock", "Write-back", "Fragmentation", "Paging speed"], c: 1 },
+            { q: "Language {ww^R} is:", opts: ["Regular", "DCFL", "CFL but not DCFL", "CSL"], c: 2 },
+            { q: "In RSA, if p=3, q=11, then n is:", opts: ["14", "33", "8", "20"], c: 1 },
+            { q: "Complexity of Kruskal's with Union-Find?", opts: ["O(V log V)", "O(E log E)", "O(V^2)", "O(E log V)"], c: 1 },
+            { q: "In DBMS, 'Atomicity' is handled by:", opts: ["Compiler", "Recovery manager", "Buffer manager", "Log"], c: 1 },
+            { q: "Which logic family has lowest power?", opts: ["TTL", "ECL", "CMOS", "RTL"], c: 2 },
+            { q: "Fragment Offset unit is:", opts: ["4 bytes", "8 bytes", "1 byte", "16 bytes"], c: 1 },
+            { q: "Max height of AVL tree with n nodes?", opts: ["log n", "1.44 log n", "n", "n log n"], c: 1 },
+            { q: "Which is NOT a valid state in OS?", opts: ["Ready", "Running", "Terminated", "Fetching"], c: 3 },
+            { q: "Number of 2-to-1 MUX for 4-to-1 MUX?", opts: ["2", "3", "4", "1"], c: 1 },
+            { q: "Closure of {A} in {A->B, B->C}?", opts: ["{A}", "{A,B}", "{A,B,C}", "{B,C}"], c: 2 },
+            { q: "DNS uses port:", opts: ["53", "80", "21", "443"], c: 0 },
+            { q: "Which sort is stable by default?", opts: ["Quick", "Merge", "Heap", "Selection"], c: 1 },
+            { q: "Ambiguity in grammar is:", opts: ["Decidable", "Undecidable", "NP-Hard", "Regular"], c: 1 },
+            { q: "Result of 'hello' + 'world' length?", opts: ["5", "10", "11", "Error"], c: 1 },
+            { q: "Maximum sequence number in GBN with n bits?", opts: ["2^n", "2^n - 1", "n", "2n"], c: 1 },
+            { q: "Precedence graph with cycle implies:", opts: ["Serializable", "Not conflict serializable", "Recoverable", "Cascadeless"], c: 1 },
+            { q: "Cyclomatic complexity of graph with 10 edges, 8 nodes, 2 components?", opts: ["4", "5", "6", "2"], c: 2 },
+            { q: "Which register holds instruction address?", opts: ["IR", "PC", "MAR", "MBR"], c: 1 },
+            { q: "Time complexity to find median in unsorted array?", opts: ["O(n log n)", "O(n)", "O(n^2)", "O(log n)"], c: 1 },
+            { q: "A B-tree index height 3, fan-out 100 max leaves?", opts: ["1000", "10000", "1000000", "100"], c: 2 },
+            { q: "In 64-bit system, int size is usually:", opts: ["2", "4", "8", "16"], c: 1 },
+            { q: "Which problem is NP-Hard?", opts: ["Sorting", "MST", "TSP", "BFS"], c: 2 },
+            { q: "Logical '==' operator returns:", opts: ["0 or 1", "True or False", "Address", "Null"], c: 0 },
+            { q: "Peephole optimization is in which phase?", opts: ["Lexical", "Parsing", "Code Generation", "Analysis"], c: 2 },
+            { q: "Max number of nodes in binary tree of height 4?", opts: ["15", "31", "16", "32"], c: 1 },
+            { q: "Which memory is fastest?", opts: ["RAM", "Cache", "Register", "SSD"], c: 2 },
+            { q: "In SQL, 'Truncate' is:", opts: ["DML", "DDL", "DCL", "TCL"], c: 1 },
+            { q: "Number of bits for 32 subnets?", opts: ["5", "32", "64", "4"], c: 0 },
+            { q: "Language L = {a^n | n is perfect square} is:", opts: ["Regular", "CFL", "CSL", "Finite"], c: 2 },
+            { q: "TCP is a ___ layer protocol.", opts: ["Network", "Transport", "Session", "Physical"], c: 1 },
+            { q: "Postorder of BST gives: 10, 30, 20. Root is:", opts: ["10", "30", "20", "None"], c: 2 },
+            { q: "Which is a non-linear data structure?", opts: ["Array", "Stack", "Tree", "Queue"], c: 2 },
+            { q: "Number of addresses in /27 network?", opts: ["32", "64", "16", "8"], c: 0 },
+            { q: "Which join is used to find unmatched rows?", opts: ["Inner", "Outer", "Equi", "Natural"], c: 1 },
+            { q: "Semaphore S = 5. After 3P and 2V, S is:", opts: ["4", "5", "6", "3"], c: 0 },
+            { q: "Optimal replacement is based on:", opts: ["Past", "Future", "Frequency", "Random"], c: 1 },
+            { q: "Critical path has slack:", opts: ["Max", "Zero", "One", "Negative"], c: 1 }
+        ];
+
+        let questions = [];
+        for(let i=0; i<100; i++) {
+            let base = gatePyqs[i % gatePyqs.length];
+            questions.push({
+                id: i+1,
+                question: base.q,
+                options: base.opts,
+                correct: base.c,
+                answer: null,
+                review: false
+            });
+        }
+
+        let current = 0, timer = 7200, timerActive = false;
+
+        function validateLogin() {
+            var name = document.getElementById('userName').value.trim();
+            if (name === "") {
+                alert("Please enter your name to continue.");
+                document.getElementById('userName').focus();
+                return;
+            }
+            startExam();
+        }
+
+        function startExam() {
+            document.getElementById('candidateName').innerText = "Candidate: " + document.getElementById('userName').value;
+            document.getElementById('loginPage').style.display = 'none';
+            document.getElementById('examPage').style.display = 'flex';
+            timerActive = true;
+            drawQ(); drawP(); startT();
+        }
+
+        function drawQ() {
+            const q = questions[current];
+            let html = `<div class="q-header"><span>Q. ${q.id} of 100</span> <span>Marks: +3 | -1</span></div>
+                        <div class="q-text">${q.question}</div>`;
+            q.options.forEach((opt, i) => {
+                html += `<div class="option-item ${q.answer === i ? 'selected' : ''}" onclick="pick(${i})">
+                            <span class="option-prefix">${String.fromCharCode(65+i)}</span> ${opt}
+                         </div>`;
+            });
+            document.getElementById('questionPanel').innerHTML = html;
+        }
+
+        function pick(i) { 
+            questions[current].answer = i; 
+            drawQ(); 
+            drawP(); 
+        }
+
+        function markReview() { 
+            questions[current].review = !questions[current].review; 
+            drawP(); 
+        }
+
+        function move(d) { 
+            if(current+d >= 0 && current+d < 100) { 
+                current += d; 
+                drawQ(); 
+                drawP(); 
+            } 
+        }
+        
+        function drawP() {
+            let html = "";
+            questions.forEach((q, i) => {
+                let cls = "palette-item";
+                if(i === current) cls += " current";
+                
+                // FIXED LOGIC: Blue (Review) takes priority over Green (Answered)
+                if(q.review) {
+                    cls += " review";
+                } else if(q.answer !== null) {
+                    cls += " answered";
+                }
+                
+                html += `<div class="${cls}" onclick="jump(${i})">${i+1}</div>`;
+            });
+            document.getElementById('paletteGrid').innerHTML = html;
+        }
+
+        function jump(i) { current = i; drawQ(); drawP(); }
+
+        function startT() {
+            setInterval(() => {
+                if(!timerActive) return;
+                timer--;
+                let h = Math.floor(timer/3600).toString().padStart(2,'0');
+                let m = Math.floor((timer%3600)/60).toString().padStart(2,'0');
+                let s = (timer%60).toString().padStart(2,'0');
+                document.getElementById('timerDisplay').innerText = `${h}:${m}:${s}`;
+                if(timer <= 0) finalize();
+            }, 1000);
+        }
+
+        function submitReq() { if(confirm("Submit Exam?")) finalize(); }
+
+        function finalize() {
+            timerActive = false;
+            let c = 0, w = 0;
+            let reviewHtml = "";
+
+            questions.forEach((q, index) => {
+                if(q.answer !== null) {
+                    if(q.answer === q.correct) {
+                        c++;
+                    } else {
+                        w++;
+                        reviewHtml += `
+                            <div class="review-item">
+                                <p><b>Q${index + 1}: ${q.question}</b></p>
+                                <p class="user-ans">Your Answer: ${q.options[q.answer]}</p>
+                                <p class="correct-ans">Correct Answer: ${q.options[q.correct]}</p>
+                            </div>
+                        `;
+                    }
+                } else {
+                    // Optional: You can also list unattempted questions here
+                }
+            });
+
+            document.getElementById('resC').innerText = c;
+            document.getElementById('resW').innerText = w;
+            document.getElementById('resS').innerText = (c*3) - w;
+            document.getElementById('incorrectList').innerHTML = reviewHtml || "<p>No incorrect answers! Well done.</p>";
+            
+            document.getElementById('examPage').style.display = 'none';
+            document.getElementById('resultPage').style.display = 'flex';
+        }
+
+        function toggleCalc() {
+            let el = document.getElementById('calc-wrapper');
+            el.style.display = el.style.display === 'block' ? 'none' : 'block';
+        }
+        function calcNum(n) {
+            let s = document.getElementById('calc-screen');
+            if(s.value === "0") s.value = n; else s.value += n;
+        }
+        function calcOp(o) { document.getElementById('calc-screen').value += o; }
+        function calcClear() { document.getElementById('calc-screen').value = "0"; }
+        function calcSolve() {
+            try { document.getElementById('calc-screen').value = eval(document.getElementById('calc-screen').value); }
+            catch { document.getElementById('calc-screen').value = "Error"; }
+        }
+        function calcFunc(f) {
+            let v = eval(document.getElementById('calc-screen').value);
+            if(f==='sqrt') v = Math.sqrt(v);
+            if(f==='sin') v = Math.sin(v * Math.PI / 180);
+            if(f==='log') v = Math.log10(v);
+            document.getElementById('calc-screen').value = v;
+        }
+    </script>
+</body>
+</html>

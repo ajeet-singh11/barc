@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BARC Scientific Officer CS Mock Test 2026</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Arial, sans-serif; }
+        body { background: #0a2a44; height: 100vh; display: flex; justify-content: center; align-items: center; overflow: hidden; }
+        
+        /* Virtual Calculator UI */
+        #calc-wrapper { display: none; position: fixed; top: 80px; right: 20px; width: 260px; background: #222; border: 2px solid #ff9933; border-radius: 10px; padding: 10px; z-index: 5000; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        #calc-screen { width: 100%; height: 45px; background: #eee; text-align: right; padding: 10px; margin-bottom: 10px; font-size: 20px; border-radius: 5px; font-family: monospace; border: none; }
+        .calc-keys { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; }
+        .key { padding: 10px; background: #444; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 13px; }
+        .key:hover { background: #666; }
+        .key.op { background: #ff9933; color: black; font-weight: bold; }
+
+        /* General Layout */
+        .login-page { width: 450px; background: white; border-radius: 20px; padding: 35px; box-shadow: 0 20px 40px rgba(0,0,0,0.4); border: 4px solid #ff9933; text-align: center; }
+        .barc-logo .atom { font-size: 70px; background: #0a2a44; color: #ffd700; width: 110px; height: 110px; line-height: 110px; border-radius: 50%; margin: 0 auto 15px; border: 4px solid #ff9933; }
+        .login-btn { width: 100%; padding: 15px; background: #0a2a44; color: white; border-radius: 10px; font-weight: bold; cursor: pointer; border: 2px solid #ff9933; font-size: 16px; margin-top: 20px;}
+        
+        .exam-container { display: none; width: 100%; height: 100vh; background: #f0f5fa; flex-direction: column; }
+        .exam-header { background: #0a2a44; color: white; padding: 10px 25px; border-bottom: 4px solid #ff9933; display: flex; justify-content: space-between; align-items: center; }
+        .timer-box { background: #051a2a; padding: 8px 20px; border-radius: 30px; border: 2px solid #ff9933; font-size: 24px; color: #ff9933; font-family: monospace; }
+        
+        .main-area { display: flex; flex: 1; overflow: hidden; padding: 15px; gap: 15px; }
+        .left-panel { flex: 3; background: white; border-radius: 15px; border: 2px solid #0a2a44; display: flex; flex-direction: column; }
+        .question-scroll { padding: 30px; overflow-y: auto; flex: 1; }
+        .q-header { display: flex; justify-content: space-between; border-bottom: 3px solid #ff9933; padding-bottom: 10px; margin-bottom: 20px; font-weight: bold; }
+        .q-text { font-size: 18px; color: #1a1a1a; margin-bottom: 25px; line-height: 1.6; }
+        
+        /* Options */
+        .option-item { display: flex; align-items: center; padding: 15px; background: #f8faff; border: 2px solid #d0e0f0; border-radius: 10px; cursor: pointer; margin-bottom: 12px; }
+        .option-item.selected { background: #c6e0ff; border-color: #0a2a44; }
+        .option-prefix { width: 35px; height: 35px; background: #0a2a44; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-right: 15px; font-weight: bold; }
+        
+        /* Palette Colors */
+        .right-panel { flex: 1; display: flex; flex-direction: column; gap: 15px; max-width: 350px; }
+        .palette-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; overflow-y: auto; max-height: 300px; padding: 10px; background: #f9f9f9; border-radius: 8px; }
+        .palette-item { aspect-ratio: 1; display: flex; align-items: center; justify-content: center; background: #ecf0f1; border: 1px solid #bdc3c7; border-radius: 5px; cursor: pointer; font-size: 13px; font-weight: bold; }
+        
+        .palette-item.answered { background: #27ae60 !important; color: white; }
+        .palette-item.review { background: #3498db !important; color: white; } /* BLUE for Review */
+        .palette-item.current { border: 3px solid #0a2a44; transform: scale(1.05); }
+
+        .result-page { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #0a2a44; justify-content: center; align-items: center; color: white; z-index: 8000; overflow-y: auto; padding: 40px 0;}
+        .result-card { background: white; color: #333; padding: 40px; border-radius: 20px; width: 90%; max-width: 800px; border: 6px solid #ff9933; text-align: center; margin: auto; }
+        
+        /* Incorrect Review Section */
+        .incorrect-review-section { margin-top: 30px; text-align: left; max-height: 400px; overflow-y: auto; padding-right: 10px; }
+        .review-item { background: #fdf2f2; border-left: 5px solid #e74c3c; padding: 15px; margin-bottom: 15px; border-radius: 5px; }
+        .correct-ans { color: #27ae60; font-weight: bold; margin-top: 5px; }
+        .user-ans { color: #e74c3c; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <div id="calc-wrapper">
+        <div style="color:white; font-size:12px; margin-bottom:5px; display:flex; justify-content:space-between;">
+            <span>GATE VIRTUAL CALC</span>
+            <span style="cursor:pointer" onclick="toggleCalc()">[X]</span>
+        </div>
+        <input type="text" id="calc-screen" value="0" readonly>
+        <div class="calc-keys">
+            <button class="key op" onclick="calcClear()">C</button>
+            <button class="key" onclick="calcFunc('sqrt')">√</button>
+            <button class="key" onclick="calcFunc('log')">log</button>
+            <button class="key op" onclick="calcOp('/')">/</button>
+            <button class="key" onclick="calcNum('7')">7</button>
+            <button class="key" onclick="calcNum('8')">8</button>
+            <button class="key" onclick="calcNum('9')">9</button>
+            <button class="key op" onclick="calcOp('*')">*</button>
+            <button class="key" onclick="calcNum('4')">4</button>
+            <button class="key" onclick="calcNum('5')">5</button>
+            <button class="key" onclick="calcNum('6')">6</button>
+            <button class="key op" onclick="calcOp('-')">-</button>
+            <button class="key" onclick="calcNum('1')">1</button>
+            <button class="key" onclick="calcNum('2')">2</button>
+            <button class="key" onclick="calcNum('3')">3</button>
+            <button class="key op" onclick="calcOp('+')">+</button>
+            <button class="key" onclick="calcNum('0')">0</button>
+            <button class="key" onclick="calcNum('.')">.</button>
+            <button class="key" onclick="calcFunc('sin')">sin</button>
+            <button class="key op" style="background:#27ae60" onclick="calcSolve()">=</button>
+        </div>
+    </div>
+
+    <div class="login-page" id="loginPage">
+        <div class="barc-logo"><div class="atom">⚛️</div><h1>BARC 2026</h1></div>
+        <div style="margin: 20px 0; text-align: left;">
+            <label>Name:</label><input type="text" id="userName" style="width:100%; padding:10px; margin-top:5px;" value="" placeholder="Enter Your Name" required>
+        </div>
+        <button class="login-btn" onclick="validateLogin()">🚀 LOGIN TO SYSTEM</button>
+    </div>
+
+    <div class="exam-container" id="examPage">
+        <div class="exam-header">
+            <div><h2>BARC SCIENTIFIC OFFICER MOCK</h2><p id="candidateName"></p></div>
+            <button class="key op" style="height:40px; padding:0 20px;" onclick="toggleCalc()">🖩 CALCULATOR</button>
+            <div class="timer-box" id="timerDisplay">02:00:00</div>
+        </div>
+
+        <div class="main-area">
+            <div class="left-panel">
+                <div class="question-scroll" id="questionPanel"></div>
+                <div class="nav-buttons" style="padding:20px; display:flex; gap:10px;">
+                    <button class="login-btn" style="margin:0; background:#7f8c8d" onclick="move(-1)">Previous</button>
+                    <button class="login-btn" style="margin:0; background:#3498db" onclick="markReview()">Mark for Review</button>
+                    <button class="login-btn" style="margin:0" onclick="move(1)">Save & Next</button>
+                </div>
+            </div>
+
+            <div class="right-panel">
+                <div class="palette-card">
+                    <h4>Question Palette</h4><br>
+                    <div class="palette-grid" id="paletteGrid"></div>
+                    <button class="login-btn" style="background:#e74c3c" onclick="submitReq()">FINISH EXAM</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="result-page" id="resultPage">
+        <div class="result-card">
+            <h2 style="color:#0a2a44">FINAL SCORECARD</h2><br>
+            <p>Correct Answers (+3): <b id="resC"></b></p>
+            <p>Incorrect Answers (-1): <b id="resW"></b></p>
+            <h1 style="background:#f0f5fa; padding:20px; margin:20px 0;">Total Score: <span id="resS"></span></h1>
+            
+            <div class="incorrect-review-section" id="incorrectReview">
+                <h3 style="color:#e74c3c; border-bottom: 2px solid #e74c3c; padding-bottom:5px; margin-bottom:15px;">Incorrect Questions Review:</h3>
+                <div id="incorrectList"></div>
+            </div>
+
+            <button class="login-btn" onclick="location.reload()">RETAKE TEST</button>
+            <button class="login-btn" onclick="window.location.href='index.html'">HOME</button>
+
+        </div>
+    </div>
+
+    <script>
+        // 100 NEW Unique High-Difficulty GATE/BARC Level Questions
+        const gatePyqs = [
+            { q: "In a system with 32-bit virtual addresses and 1KB page size, if each page table entry is 4 bytes, what is the size of the page table in a single-level paging system?", opts: ["4 MB", "8 MB", "16 MB", "2 MB"], c: 0 },
+            { q: "A 4-way set associative cache has 128KB capacity and 64B block size. How many bits are required for the 'Set Index' field?", opts: ["9", "10", "11", "8"], c: 0 },
+            { q: "Consider a pipeline with 4 stages S1, S2, S3, S4 having delays 10ns, 20ns, 15ns, and 25ns. If latch delay is 2ns, what is the maximum throughput?", opts: ["37.03 MIPS", "40.00 MIPS", "50.00 MIPS", "33.33 MIPS"], c: 0 },
+            { q: "Which of the following problems is decidable?", opts: ["Emptiness of Turing Machine", "Equality of two Regular Expressions", "Ambiguity of CFG", "Equivalence of two CFGs"], c: 1 },
+            { q: "In a max-heap of size 31, what is the minimum number of comparisons to find the smallest element?", opts: ["15", "16", "30", "31"], c: 0 },
+            { q: "Consider a relation R(A,B,C,D,E) with FDs {A->B, BC->D, E->A}. What is the candidate key?", opts: ["{A,C}", "{E,C}", "{B,C,E}", "{A,B}"], c: 1 },
+            { q: "In the IPv4 header, the 'Total Length' field is 16 bits. What is the maximum size of an IP datagram including the header?", opts: ["65,535 bytes", "32,768 bytes", "1,500 bytes", "65,515 bytes"], c: 0 },
+            { q: "A language L = {a^n b^m c^k | n=m or m=k} is:", opts: ["Regular", "Deterministic Context-Free", "Context-Free but not DCFL", "Context-Sensitive"], c: 2 },
+            { q: "How many edge-disjoint Hamiltonian cycles exist in a complete graph K_n where n is odd and n >= 3?", opts: ["n", "n-1", "(n-1)/2", "n/2"], c: 2 },
+            { q: "In C, what is the output of 'printf(\"%d\", sizeof(void*))' on a 64-bit machine?", opts: ["4", "8", "1", "0"], c: 1 },
+            { q: "A processor uses 16-bit instructions and has 64 registers. If it supports 2-address instructions (Opcode, Reg, Reg), how many such instructions are possible?", opts: ["256", "1024", "4096", "16"], c: 1 },
+            { q: "In a B+ Tree of order 10, what is the minimum number of keys in a non-root leaf node?", opts: ["4", "5", "9", "10"], c: 1 },
+            { q: "Which of the following is true for an LL(1) grammar?", opts: ["It can be ambiguous", "It cannot be left recursive", "It must have left factoring", "It is always finite"], c: 1 },
+            { q: "A TCP connection uses a window size of 10 segments and RTT is 100ms. What is the maximum bandwidth-delay product to keep the pipe full?", opts: ["10 segments", "100 segments", "1 segment", "5 segments"], c: 0 },
+            { q: "In a graph with V vertices and E edges, if every vertex has degree k, then:", opts: ["2E = Vk", "E = Vk", "Vk = E/2", "V = 2Ek"], c: 0 },
+            { q: "Which of the following is guaranteed by the Banker's Algorithm?", opts: ["Deadlock Prevention", "Deadlock Avoidance", "Mutual Exclusion", "Starvation Freedom"], c: 1 },
+            { q: "Consider L = {w | w has an even number of 0s and even number of 1s}. The minimum number of states in a DFA for L is:", opts: ["2", "3", "4", "5"], c: 2 },
+            { q: "In the relational model, 'Referential Integrity' is enforced using:", opts: ["Primary Key", "Foreign Key", "Candidate Key", "Super Key"], c: 1 },
+            { q: "A disk rotates at 7200 RPM. What is the average rotational latency?", opts: ["4.17 ms", "8.33 ms", "1.00 ms", "2.00 ms"], c: 0 },
+            { q: "In IEEE 754 double precision format, the exponent field is of how many bits?", opts: ["8", "11", "15", "32"], c: 1 },
+            { q: "Which logic family provides the highest speed of operation?", opts: ["TTL", "CMOS", "ECL", "RTL"], c: 2 },
+            { q: "A process executes: fork(); if(fork()) fork(); How many total processes are created?", opts: ["4", "5", "6", "8"], c: 1 },
+            { q: "The time complexity of the Floyd-Warshall algorithm is:", opts: ["O(V^2)", "O(V^3)", "O(E log V)", "O(V*E)"], c: 1 },
+            { q: "In a k-way merge sort of n elements, the number of passes required is:", opts: ["log_2 n", "log_k n", "n/k", "k log n"], c: 1 },
+            { q: "Which of the following is NOT a member of the ACID properties?", opts: ["Consistency", "Isolation", "Durability", "Availability"], c: 3 },
+            { q: "What is the maximum number of nodes in a binary tree of height 5 (root height = 0)?", opts: ["31", "32", "63", "64"], c: 2 },
+            { q: "Which protocol is used to map an IP address to a MAC address?", opts: ["RARP", "DHCP", "ARP", "ICMP"], c: 2 },
+            { q: "The language L = {a^n b^n | n >= 1} is:", opts: ["Regular", "Context-Free", "Context-Sensitive", "Recursive Enumerable"], c: 1 },
+            { q: "In C, 'a[i]' is equivalent to:", opts: ["*(a+i)", "&(a+i)", "*(a*i)", "a+i"], c: 0 },
+            { q: "What is the result of the expression (14 | 7) in bitwise logic?", opts: ["15", "7", "14", "21"], c: 0 },
+            { q: "In a multi-threaded process, which of the following is shared among threads?", opts: ["Stack", "Registers", "Address Space", "Program Counter"], c: 2 },
+            { q: "The 'Pumping Lemma' for regular languages is a:", opts: ["Necessary condition", "Sufficient condition", "Both A and B", "None"], c: 0 },
+            { q: "A subnet mask of 255.255.255.248 allows for how many usable hosts?", opts: ["8", "7", "6", "5"], c: 2 },
+            { q: "In DBMS, 'Conflict Serializability' is checked using:", opts: ["Wait-for Graph", "Precedence Graph", "State Graph", "Dependency Graph"], c: 1 },
+            { q: "The worst-case time complexity to search an element in an AVL tree is:", opts: ["O(n)", "O(log n)", "O(1)", "O(n log n)"], c: 1 },
+            { q: "Which interrupt has the highest priority in the 8085 microprocessor?", opts: ["TRAP", "RST 7.5", "INTR", "RST 5.5"], c: 0 },
+            { q: "A grammar is said to be 'Left Recursive' if it has a production of the form:", opts: ["A -> Ba", "A -> Ab", "A -> a", "A -> bA"], c: 1 },
+            { q: "The number of bits used for fragment offset in the IPv4 header is:", opts: ["8", "13", "16", "10"], c: 1 },
+            { q: "In a 2-level page table, if outer table has 1024 entries and inner has 1024, total pages mapped are:", opts: ["1024", "2048", "1 Million", "4096"], c: 2 },
+            { q: "The problem of finding a MST can be solved using:", opts: ["Dijkstra's", "Kruskal's", "Bellman-Ford", "Floyd-Warshall"], c: 1 },
+            { q: "What is the size of the tag field in a direct-mapped cache (32-bit addr, 1024 blocks, 32B block)?", opts: ["12", "17", "22", "10"], c: 1 },
+            { q: "Which parsing technique is most powerful?", opts: ["SLR", "LALR", "Canonical LR", "LL(1)"], c: 2 },
+            { q: "The language {w w | w is in {a,b}*} is:", opts: ["Context-Free", "Context-Sensitive", "Regular", "DCFL"], c: 1 },
+            { q: "Number of binary trees with 3 nodes is:", opts: ["3", "4", "5", "6"], c: 2 },
+            { q: "In SQL, which clause is used to filter results of an aggregate function?", opts: ["WHERE", "HAVING", "GROUP BY", "ORDER BY"], c: 1 },
+            { q: "A semaphore value is -5. How many processes are in the waiting queue?", opts: ["0", "5", "6", "4"], c: 1 },
+            { q: "Which CPU scheduling algorithm can lead to starvation?", opts: ["Round Robin", "FCFS", "Priority Scheduling", "Multilevel Queue"], c: 2 },
+            { q: "The bitwise XOR of '1010' and '1100' is:", opts: ["1110", "0110", "1000", "0001"], c: 1 },
+            { q: "What is the maximum window size for Selective Repeat ARQ with 3-bit sequence numbers?", opts: ["8", "7", "4", "3"], c: 2 },
+            { q: "Which property ensures a database transaction is 'All or Nothing'?", opts: ["Consistency", "Atomicity", "Isolation", "Durability"], c: 1 },
+            { q: "The complexity of Merge Sort in the worst case is:", opts: ["O(n^2)", "O(n log n)", "O(n)", "O(log n)"], c: 1 },
+            { q: "How many NAND gates are needed for an AND gate?", opts: ["1", "2", "3", "4"], c: 1 },
+            { q: "In an Ethernet network, CSMA/CD is used to:", opts: ["Detect collisions", "Prevent collisions", "Route packets", "Assign IPs"], c: 0 },
+            { q: "Which normal form handles 'Multivalued Dependency'?", opts: ["3NF", "BCNF", "4NF", "5NF"], c: 2 },
+            { q: "What is the height of a min-heap with 7 elements?", opts: ["2", "3", "7", "1"], c: 0 },
+            { q: "Which of the following is a self-complementing code?", opts: ["8421", "Excess-3", "Gray", "Binary"], c: 1 },
+            { q: "A bipartite graph K_{3,3} has how many edges?", opts: ["6", "9", "3", "12"], c: 1 },
+            { q: "In a 64-bit system, what is the size of 'long double' in C usually?", opts: ["8", "12", "16", "10"], c: 2 },
+            { q: "Which algorithm is used for finding the shortest path in a graph with negative edges?", opts: ["Dijkstra's", "Bellman-Ford", "Prim's", "BFS"], c: 1 },
+            { q: "The number of bits in the offset of a 4KB page is:", opts: ["10", "12", "13", "14"], c: 1 },
+            { q: "Which data structure is best for implementing a 'Undo' feature?", opts: ["Queue", "Stack", "Linked List", "Tree"], c: 1 },
+            { q: "In the OSI model, which layer is responsible for data encryption?", opts: ["Application", "Presentation", "Session", "Transport"], c: 1 },
+            { q: "What is 2's complement of 1010?", opts: ["0101", "0110", "1100", "0111"], c: 1 },
+            { q: "Which sorting algorithm has the best worst-case complexity?", opts: ["Quick Sort", "Merge Sort", "Bubble Sort", "Selection Sort"], c: 1 },
+            { q: "Number of addresses in a /24 network?", opts: ["128", "256", "512", "1024"], c: 1 },
+            { q: "Which join returns all rows from left table and matched from right?", opts: ["Inner Join", "Left Outer Join", "Full Outer Join", "Right Join"], c: 1 },
+            { q: "In TOC, a DFA can recognize:", opts: ["{a^n b^n}", "Balanced Parens", "Odd number of 1s", "w w^R"], c: 2 },
+            { q: "Size of an ATM cell in bytes is:", opts: ["48", "53", "64", "32"], c: 1 },
+            { q: "Which register in 8085 is used as a 16-bit stack pointer?", opts: ["HL", "BC", "SP", "PC"], c: 2 },
+            { q: "In a Red-Black tree, the root is always:", opts: ["Red", "Black", "Either", "Null"], c: 1 },
+            { q: "Which logic gate is equivalent to (A.B)'?", opts: ["AND", "NAND", "OR", "NOR"], c: 1 },
+            { q: "The 'Critical Path' in project management has a slack of:", opts: ["Maximum", "Minimum", "Zero", "Positive"], c: 2 },
+            { q: "In Unix, 'chmod 777' gives:", opts: ["No access", "Full access", "Read only", "Execute only"], c: 1 },
+            { q: "Binary search works only on:", opts: ["Linked list", "Sorted array", "Unsorted array", "Tree"], c: 1 },
+            { q: "Which protocol uses Port 25?", opts: ["HTTP", "FTP", "SMTP", "DNS"], c: 2 },
+            { q: "Maximum value of a 4-bit unsigned integer?", opts: ["7", "8", "15", "16"], c: 2 },
+            { q: "Which data structure uses FIFO?", opts: ["Stack", "Queue", "Binary Tree", "Graph"], c: 1 },
+            { q: "What is the result of '5 >> 1' in C?", opts: ["10", "2", "3", "2.5"], c: 1 },
+            { q: "In DBMS, 'Deadlock' is a state where:", opts: ["Processes wait forever", "Disk fails", "Network is slow", "Log is full"], c: 0 },
+            { q: "A full adder has how many inputs?", opts: ["1", "2", "3", "4"], c: 2 },
+            { q: "Which layer handles 'Error Control' in Data Link Layer?", opts: ["MAC", "LLC", "Network", "Physical"], c: 1 },
+            { q: "Complexity of Quick Sort in the best case?", opts: ["O(n^2)", "O(n log n)", "O(n)", "O(1)"], c: 1 },
+            { q: "Which is a 'Non-Recursive' parser?", opts: ["Recursive Descent", "LL(1) Table", "Operator Precedence", "None"], c: 1 },
+            { q: "Number of bits in a nibble?", opts: ["4", "8", "16", "2"], c: 0 },
+            { q: "Which scheduling is non-preemptive?", opts: ["Round Robin", "SRTF", "FCFS", "Preemptive Priority"], c: 2 },
+            { q: "The 'Master Theorem' is used for:", opts: ["Sorting", "Recurrences", "Graph theory", "Probability"], c: 1 },
+            { q: "Which logic gate is (A+B)?", opts: ["OR", "AND", "NOR", "NOT"], c: 0 },
+            { q: "What is '5 % 2' in C?", opts: ["2", "1", "2.5", "0"], c: 1 },
+            { q: "Which protocol is 'Connectionless'?", opts: ["TCP", "UDP", "HTTP", "FTP"], c: 1 },
+            { q: "What is the degree of a root in a binary tree?", opts: ["0", "1", "0, 1, or 2", "Exactly 2"], c: 2 },
+            { q: "In COA, 'Pipelining' improves:", opts: ["Latency", "Throughput", "Power", "Accuracy"], c: 1 },
+            { q: "Which join combines all columns from two tables?", opts: ["Cross Join", "Natural Join", "Inner Join", "Outer Join"], c: 0 },
+            { q: "A 4-bit synchronous counter has how many flip-flops?", opts: ["2", "4", "8", "16"], c: 1 },
+            { q: "What is the range of 8-bit signed integers?", opts: ["0 to 255", "-128 to 127", "-127 to 128", "-256 to 255"], c: 1 },
+            { q: "Which layer of OSI model uses frames?", opts: ["Physical", "Data Link", "Network", "Transport"], c: 1 },
+            { q: "The 'Ambiguity' of a CFG is:", opts: ["Decidable", "Undecidable", "Decidable for Regular", "None"], c: 1 },
+            { q: "Postorder of binary tree is: Left, Right, ____.", opts: ["Root", "Center", "Leaf", "Parent"], c: 0 },
+            { q: "In C, 'break' statement is used with:", opts: ["if", "switch", "while", "Both B and C"], c: 3 },
+            { q: "What is the size of an IPv6 address?", opts: ["32 bits", "64 bits", "128 bits", "128 bytes"], c: 2 },
+            { q: "Which is a 'Greedy' approach?", opts: ["Prim's", "LCS", "Matrix Chain", "All-Pairs Shortest Path"], c: 0 }
+        ];
+
+        let questions = [];
+        for(let i=0; i<100; i++) {
+            let base = gatePyqs[i % gatePyqs.length];
+            questions.push({
+                id: i+1,
+                question: base.q,
+                options: base.opts,
+                correct: base.c,
+                answer: null,
+                review: false
+            });
+        }
+
+        let current = 0, timer = 7200, timerActive = false;
+
+        function validateLogin() {
+            var name = document.getElementById('userName').value.trim();
+            if (name === "") {
+                alert("Please enter your name to continue.");
+                document.getElementById('userName').focus();
+                return;
+            }
+            startExam();
+        }
+
+        function startExam() {
+            document.getElementById('candidateName').innerText = "Candidate: " + document.getElementById('userName').value;
+            document.getElementById('loginPage').style.display = 'none';
+            document.getElementById('examPage').style.display = 'flex';
+            timerActive = true;
+            drawQ(); drawP(); startT();
+        }
+
+        function drawQ() {
+            const q = questions[current];
+            let html = `<div class="q-header"><span>Q. ${q.id} of 100</span> <span>Marks: +3 | -1</span></div>
+                        <div class="q-text">${q.question}</div>`;
+            q.options.forEach((opt, i) => {
+                html += `<div class="option-item ${q.answer === i ? 'selected' : ''}" onclick="pick(${i})">
+                            <span class="option-prefix">${String.fromCharCode(65+i)}</span> ${opt}
+                         </div>`;
+            });
+            document.getElementById('questionPanel').innerHTML = html;
+        }
+
+        function pick(i) { 
+            questions[current].answer = i; 
+            drawQ(); 
+            drawP(); 
+        }
+
+        function markReview() { 
+            questions[current].review = !questions[current].review; 
+            drawP(); 
+        }
+
+        function move(d) { 
+            if(current+d >= 0 && current+d < 100) { 
+                current += d; 
+                drawQ(); 
+                drawP(); 
+            } 
+        }
+        
+        function drawP() {
+            let html = "";
+            questions.forEach((q, i) => {
+                let cls = "palette-item";
+                if(i === current) cls += " current";
+                
+                // FIXED LOGIC: Blue (Review) takes priority over Green (Answered)
+                if(q.review) {
+                    cls += " review";
+                } else if(q.answer !== null) {
+                    cls += " answered";
+                }
+                
+                html += `<div class="${cls}" onclick="jump(${i})">${i+1}</div>`;
+            });
+            document.getElementById('paletteGrid').innerHTML = html;
+        }
+
+        function jump(i) { current = i; drawQ(); drawP(); }
+
+        function startT() {
+            setInterval(() => {
+                if(!timerActive) return;
+                timer--;
+                let h = Math.floor(timer/3600).toString().padStart(2,'0');
+                let m = Math.floor((timer%3600)/60).toString().padStart(2,'0');
+                let s = (timer%60).toString().padStart(2,'0');
+                document.getElementById('timerDisplay').innerText = `${h}:${m}:${s}`;
+                if(timer <= 0) finalize();
+            }, 1000);
+        }
+
+        function submitReq() { if(confirm("Submit Exam?")) finalize(); }
+
+        function finalize() {
+            timerActive = false;
+            let c = 0, w = 0;
+            let reviewHtml = "";
+
+            questions.forEach((q, index) => {
+                if(q.answer !== null) {
+                    if(q.answer === q.correct) {
+                        c++;
+                    } else {
+                        w++;
+                        reviewHtml += `
+                            <div class="review-item">
+                                <p><b>Q${index + 1}: ${q.question}</b></p>
+                                <p class="user-ans">Your Answer: ${q.options[q.answer]}</p>
+                                <p class="correct-ans">Correct Answer: ${q.options[q.correct]}</p>
+                            </div>
+                        `;
+                    }
+                } else {
+                    // Optional: You can also list unattempted questions here
+                }
+            });
+
+            document.getElementById('resC').innerText = c;
+            document.getElementById('resW').innerText = w;
+            document.getElementById('resS').innerText = (c*3) - w;
+            document.getElementById('incorrectList').innerHTML = reviewHtml || "<p>No incorrect answers! Well done.</p>";
+            
+            document.getElementById('examPage').style.display = 'none';
+            document.getElementById('resultPage').style.display = 'flex';
+        }
+
+        function toggleCalc() {
+            let el = document.getElementById('calc-wrapper');
+            el.style.display = el.style.display === 'block' ? 'none' : 'block';
+        }
+        function calcNum(n) {
+            let s = document.getElementById('calc-screen');
+            if(s.value === "0") s.value = n; else s.value += n;
+        }
+        function calcOp(o) { document.getElementById('calc-screen').value += o; }
+        function calcClear() { document.getElementById('calc-screen').value = "0"; }
+        function calcSolve() {
+            try { document.getElementById('calc-screen').value = eval(document.getElementById('calc-screen').value); }
+            catch { document.getElementById('calc-screen').value = "Error"; }
+        }
+        function calcFunc(f) {
+            let v = eval(document.getElementById('calc-screen').value);
+            if(f==='sqrt') v = Math.sqrt(v);
+            if(f==='sin') v = Math.sin(v * Math.PI / 180);
+            if(f==='log') v = Math.log10(v);
+            document.getElementById('calc-screen').value = v;
+        }
+    </script>
+</body>
+</html>
